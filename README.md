@@ -253,7 +253,9 @@ A template renders at its own size, so `width` and `height` are not set here.
 | `output-path` | no | | Path to download the render to. Parent directories are created. |
 | `skip-unchanged` | no | `true` | Skip the API call when the output and its hash sidecar are already current. |
 
-Set exactly one of `html`, `html-file`, `url` or `template`. Every default above is the API's own: leave an input out and the API applies it. The `dpi` default depends on the endpoint — 1 for a `url` screenshot, 2 for HTML.
+Set exactly one of `html`, `html-file`, `url` or `template`. Every default above is the API's own: leave an input out and the API applies it.
+
+The `dpi` default depends on the endpoint: 1 for a `url` screenshot, but 2 for HTML. So `html` with `width: 1200` and `height: 630` returns a 2400×1260 file, which is the sharper choice for a card on a retina display. Set `dpi: 1` if you need the file to be exactly the dimensions you asked for.
 
 `css` is injected on top of the page's existing styles, which usually win on specificity, so `!important` is generally needed. It is the tidiest way to hide a cookie banner or a chat widget before a screenshot.
 
