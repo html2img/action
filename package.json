@@ -1,0 +1,32 @@
+{
+  "name": "html2img-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action that renders HTML, live URLs and named templates to images with the HTML to Image API",
+  "homepage": "https://html2img.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/html2img/action.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "ncc build src/main.ts -o dist --license licenses.txt",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "all": "npm run typecheck && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^20.17.10",
+    "@vercel/ncc": "^0.38.3",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  }
+}

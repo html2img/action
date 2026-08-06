@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      # Consumers pin html2img/action@v1, so the major tag has to follow each
+      # release on that line.
+      - name: Move the v1 tag to this release
+        run: |
+          tag='${{ github.event.release.tag_name }}'
+          case "$tag" in
+            v1.*|v1) ;;
+            *) echo "Tag $tag is not on the v1 line, leaving v1 where it is." ; exit 0 ;;
+          esac
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -f v1
+          git push --force origin v1

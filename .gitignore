@@ -1,0 +1,4 @@
+node_modules/
+*.log
+
+# dist/ is deliberately committed: the node20 runner executes it directly.

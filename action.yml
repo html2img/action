@@ -1,0 +1,55 @@
+name: 'HTML to Image'
+description: 'Generate Open Graph images, screenshots and social cards in CI with the HTML to Image API (html2img.com).'
+author: 'html2img'
+
+branding:
+  icon: 'image'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'Your html2img API key. Store it as a repository secret and pass it as ${{ secrets.HTML2IMG_API_KEY }}; it is masked in the logs.'
+    required: true
+  html:
+    description: 'Inline HTML document to render. Mutually exclusive with html-file, url and template.'
+    required: false
+  html-file:
+    description: 'Path to an HTML file in the workspace to render. Mutually exclusive with html, url and template.'
+    required: false
+  url:
+    description: 'Publicly reachable URL to screenshot. Mutually exclusive with html, html-file and template.'
+    required: false
+  template:
+    description: 'Slug of a named template to render, for example open-graph-image. Mutually exclusive with html, html-file and url.'
+    required: false
+  variables:
+    description: 'JSON object of the template inputs. Only valid alongside template.'
+    required: false
+  width:
+    description: 'Viewport width in pixels, 1 to 5000. Defaults to the API default of 1440. No effect on PDF or template renders.'
+    required: false
+  height:
+    description: 'Viewport height in pixels, 1 to 5000. Defaults to the API default of 900. No effect on PDF or template renders.'
+    required: false
+  format:
+    description: 'Output format, png or pdf. Defaults to the API default of png. The API does not produce JPEG.'
+    required: false
+  output-path:
+    description: 'Path in the workspace to download the render to. Parent directories are created. Leave unset to use the url output only.'
+    required: false
+  skip-unchanged:
+    description: 'Skip the API call when output-path already exists and its .html2img-hash sidecar matches the current inputs.'
+    required: false
+    default: 'true'
+
+outputs:
+  url:
+    description: 'The hosted URL of the render. On a skip, the URL recorded in the sidecar.'
+  path:
+    description: 'The path the render was downloaded to, or empty when output-path was not set.'
+  skipped:
+    description: 'true when the render was skipped because the inputs had not changed, otherwise false.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

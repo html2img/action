@@ -1,0 +1,76 @@
+name: Smoke test
+
+# Hits the live API, so each run spends a small number of credits.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'dist/**'
+      - 'action.yml'
+      - '.github/workflows/smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Render inline HTML to a file
+        id: render
+        uses: ./
+        with:
+          api-key: ${{ secrets.HTML2IMG_API_KEY }}
+          html: '<div style="font: 700 72px system-ui; padding: 80px">Smoke test</div>'
+          width: 1200
+          height: 630
+          output-path: smoke/card.png
+
+      - name: Check the render produced a file and a URL
+        run: |
+          test "${{ steps.render.outputs.skipped }}" = "false"
+          test "${{ steps.render.outputs.path }}" = "smoke/card.png"
+          test -s smoke/card.png
+          test -s smoke/card.png.html2img-hash
+          case "${{ steps.render.outputs.url }}" in
+            https://*) ;;
+            *) echo "Expected an https url output" >&2; exit 1 ;;
+          esac
+          file smoke/card.png | grep -q 'PNG image data'
+
+      - name: Re-run with identical inputs
+        id: cached
+        uses: ./
+        with:
+          api-key: ${{ secrets.HTML2IMG_API_KEY }}
+          html: '<div style="font: 700 72px system-ui; padding: 80px">Smoke test</div>'
+          width: 1200
+          height: 630
+          output-path: smoke/card.png
+
+      - name: Check the second run was skipped
+        run: |
+          test "${{ steps.cached.outputs.skipped }}" = "true"
+          test "${{ steps.cached.outputs.url }}" = "${{ steps.render.outputs.url }}"
+
+      - name: Screenshot a URL
+        id: screenshot
+        uses: ./
+        with:
+          api-key: ${{ secrets.HTML2IMG_API_KEY }}
+          url: https://html2img.com
+          width: 1280
+          height: 720
+
+      - name: Check the screenshot returned a URL and no file
+        run: |
+          test "${{ steps.screenshot.outputs.skipped }}" = "false"
+          test -z "${{ steps.screenshot.outputs.path }}"
+          case "${{ steps.screenshot.outputs.url }}" in
+            https://*) ;;
+            *) echo "Expected an https url output" >&2; exit 1 ;;
+          esac
