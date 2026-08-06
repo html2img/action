@@ -15,7 +15,27 @@ permissions:
   contents: read
 
 jobs:
+  # The secrets context is not available to a job-level `if`, so the presence
+  # of the key is resolved here and consumed through `needs`.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      has-key: ${{ steps.check.outputs.has-key }}
+    steps:
+      - id: check
+        env:
+          HTML2IMG_API_KEY: ${{ secrets.HTML2IMG_API_KEY }}
+        run: |
+          if [ -n "$HTML2IMG_API_KEY" ]; then
+            echo 'has-key=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'No HTML2IMG_API_KEY secret is set, so the live smoke test is skipped.'
+            echo 'has-key=false' >> "$GITHUB_OUTPUT"
+          fi
+
   smoke:
+    needs: guard
+    if: needs.guard.outputs.has-key == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

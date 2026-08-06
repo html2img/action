@@ -8,7 +8,9 @@ branding:
 
 inputs:
   api-key:
-    description: 'Your html2img API key. Store it as a repository secret and pass it as ${{ secrets.HTML2IMG_API_KEY }}; it is masked in the logs.'
+    # No workflow expression here: GitHub evaluates them when it loads this
+    # file, where the secrets context does not exist.
+    description: 'Your html2img API key, read from a repository secret. It is masked in the logs.'
     required: true
   html:
     description: 'Inline HTML document to render. Mutually exclusive with html-file, url and template.'
