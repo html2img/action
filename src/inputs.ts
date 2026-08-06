@@ -38,7 +38,9 @@ export interface RenderOptions {
   dpi?: number;
   selector?: string;
   waitForSelector?: string;
+  msDelay?: number;
   format?: Format;
+  scaleToFit?: boolean;
 }
 
 /** The fully resolved inputs for one render. */
@@ -56,6 +58,7 @@ const FORMATS: readonly string[] = ['png', 'pdf'];
 /** The API's documented ranges, checked here to fail fast and free. */
 const DIMENSION_RANGE = { min: 1, max: 5000 } as const;
 const DPI_RANGE = { min: 1, max: 4 } as const;
+const MS_DELAY_RANGE = { min: 1, max: 5000 } as const;
 
 /** The input name behind each option, for messages. */
 const INPUT_NAMES: Record<keyof RenderOptions, string> = {
@@ -66,7 +69,9 @@ const INPUT_NAMES: Record<keyof RenderOptions, string> = {
   dpi: 'dpi',
   selector: 'selector',
   waitForSelector: 'wait-for-selector',
+  msDelay: 'ms-delay',
   format: 'format',
+  scaleToFit: 'scale-to-fit',
 };
 
 /** Read every input, mask the key, and validate the combination. */
@@ -110,7 +115,9 @@ function readOptions(): RenderOptions {
     dpi: readInteger('dpi', DPI_RANGE),
     selector: optional('selector')?.trim(),
     waitForSelector: optional('wait-for-selector')?.trim(),
+    msDelay: readInteger('ms-delay', MS_DELAY_RANGE),
     format: readFormat(),
+    scaleToFit: readBoolean('scale-to-fit'),
   };
 }
 
@@ -132,13 +139,23 @@ function normalise(source: Source, options: RenderOptions): RenderOptions {
     // the same name. Only format is a documented override.
     return drop(
       options,
-      ['css', 'width', 'height', 'fullpage', 'dpi', 'waitForSelector'],
+      ['css', 'width', 'height', 'fullpage', 'dpi', 'waitForSelector', 'msDelay', 'scaleToFit'],
       'for a template render',
       'A template renders at its own size from its own inputs.',
     );
   }
 
   let result = options;
+
+  if (result.format !== 'pdf') {
+    // scale_to_fit only decides how a document is fitted to the A4 page.
+    result = drop(
+      result,
+      ['scaleToFit'],
+      'unless format is pdf',
+      'It fits a wide layout to the A4 page width; an image is sized by width and height instead.',
+    );
+  }
 
   if (result.format === 'pdf') {
     // PDF output is A4 portrait and vector, so sizing and cropping do not
@@ -340,7 +357,7 @@ function readFormat(): Format | undefined {
 }
 
 function readInteger(
-  name: 'width' | 'height' | 'dpi',
+  name: 'width' | 'height' | 'dpi' | 'ms-delay',
   range: { min: number; max: number },
 ): number | undefined {
   const value = optional(name);

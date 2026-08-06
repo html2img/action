@@ -84,7 +84,9 @@ function parameters(options: RenderOptions): Record<string, unknown> {
     dpi: options.dpi,
     selector: options.selector,
     wait_for_selector: options.waitForSelector,
+    ms_delay: options.msDelay,
     format: options.format,
+    scale_to_fit: options.scaleToFit,
   };
 }
 

@@ -247,9 +247,11 @@ A template renders at its own size, so `width` and `height` are not set here.
 | `full-page` | no | `false` | Capture the whole height of the content instead of the viewport. |
 | `selector` | no | | CSS selector to crop the capture to. Only valid with `url`, and must match exactly one element. |
 | `wait-for-selector` | no | | Wait until this CSS selector appears in the DOM before capturing. |
+| `ms-delay` | no | | Wait this many milliseconds before capturing, 1 to 5000. |
 | `dpi` | no | `1` or `2` | Device pixel ratio, 1 to 4. Multiplies the rendered dimensions. |
 | `css` | no | | Extra CSS injected into the page. |
 | `format` | no | `png` | Either `png` or `pdf`. |
+| `scale-to-fit` | no | `false` | PDF only: scale a layout wider than the page down to fit instead of cropping it. |
 | `output-path` | no | | Path to download the render to. Parent directories are created. |
 | `skip-unchanged` | no | `true` | Skip the API call when the output and its hash sidecar are already current. |
 
@@ -259,12 +261,17 @@ The `dpi` default depends on the endpoint: 1 for a `url` screenshot, but 2 for H
 
 `css` is injected on top of the page's existing styles, which usually win on specificity, so `!important` is generally needed. It is the tidiest way to hide a cookie banner or a chat widget before a screenshot.
 
+For timing, prefer `wait-for-selector` wherever you control the markup: it returns as soon as the element exists, where `ms-delay` always waits the full duration. `ms-delay` is the fallback for the case `wait-for-selector` cannot cover, since it does not see inside iframes. If you find yourself reaching for several seconds of delay, the render is probably close to the API's timeout and worth simplifying instead.
+
+`scale-to-fit` applies to PDF output only. It scales a layout wider than the A4 page down until it fits, rather than cropping it, and trims a trailing blank page. It only ever scales down, so a 600px-wide card stays 600px wide on the page.
+
 Some combinations cannot do anything, and the API documents them as ignored. Rather than send them, the action drops them and says so in a warning, which also keeps the cache from re-rendering over an input that could not have changed the output:
 
 | Combination | Ignored |
 | --- | --- |
 | a template render | everything except `format`, since a template renders at its own size from its own inputs |
 | `format: pdf` | `width`, `height`, `full-page`, `dpi` and `selector`, since PDF output is A4 portrait and paginates long content |
+| anything but `format: pdf` | `scale-to-fit`, which only decides how a document is fitted to the page |
 | `full-page: true` | `height`, because the image takes the height of the content, and `dpi`, which the API forces to 1 |
 
 Using `selector` without `url` is an error rather than a warning, because it would otherwise return a full-page capture where you asked for one element.

@@ -25743,7 +25743,9 @@ function parameters(options) {
         dpi: options.dpi,
         selector: options.selector,
         wait_for_selector: options.waitForSelector,
+        ms_delay: options.msDelay,
         format: options.format,
+        scale_to_fit: options.scaleToFit,
     };
 }
 /** POST a JSON body and decode the response, mapping every failure. */
@@ -26107,6 +26109,7 @@ const FORMATS = ['png', 'pdf'];
 /** The API's documented ranges, checked here to fail fast and free. */
 const DIMENSION_RANGE = { min: 1, max: 5000 };
 const DPI_RANGE = { min: 1, max: 4 };
+const MS_DELAY_RANGE = { min: 1, max: 5000 };
 /** The input name behind each option, for messages. */
 const INPUT_NAMES = {
     css: 'css',
@@ -26116,7 +26119,9 @@ const INPUT_NAMES = {
     dpi: 'dpi',
     selector: 'selector',
     waitForSelector: 'wait-for-selector',
+    msDelay: 'ms-delay',
     format: 'format',
+    scaleToFit: 'scale-to-fit',
 };
 /** Read every input, mask the key, and validate the combination. */
 async function resolveInputs() {
@@ -26151,7 +26156,9 @@ function readOptions() {
         dpi: readInteger('dpi', DPI_RANGE),
         selector: optional('selector')?.trim(),
         waitForSelector: optional('wait-for-selector')?.trim(),
+        msDelay: readInteger('ms-delay', MS_DELAY_RANGE),
         format: readFormat(),
+        scaleToFit: readBoolean('scale-to-fit'),
     };
 }
 /**
@@ -26167,9 +26174,13 @@ function normalise(source, options) {
         // A template's own inputs travel as top-level keys of the request body, so
         // sending render options alongside them risks colliding with an input of
         // the same name. Only format is a documented override.
-        return drop(options, ['css', 'width', 'height', 'fullpage', 'dpi', 'waitForSelector'], 'for a template render', 'A template renders at its own size from its own inputs.');
+        return drop(options, ['css', 'width', 'height', 'fullpage', 'dpi', 'waitForSelector', 'msDelay', 'scaleToFit'], 'for a template render', 'A template renders at its own size from its own inputs.');
     }
     let result = options;
+    if (result.format !== 'pdf') {
+        // scale_to_fit only decides how a document is fitted to the A4 page.
+        result = drop(result, ['scaleToFit'], 'unless format is pdf', 'It fits a wide layout to the A4 page width; an image is sized by width and height instead.');
+    }
     if (result.format === 'pdf') {
         // PDF output is A4 portrait and vector, so sizing and cropping do not
         // apply. css and wait-for-selector still affect what gets rendered.

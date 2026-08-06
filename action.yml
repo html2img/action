@@ -42,6 +42,9 @@ inputs:
   wait-for-selector:
     description: 'Wait until this CSS selector appears in the DOM before capturing. Not detected inside iframes.'
     required: false
+  ms-delay:
+    description: 'Wait this many milliseconds before capturing, 1 to 5000. Prefer wait-for-selector where you control the markup, since it returns as soon as the element exists.'
+    required: false
   dpi:
     description: 'Device pixel ratio, 1 to 4. Defaults to the API default, which is 1 for a url screenshot and 2 for HTML. Ignored for PDF and template renders, and forced to 1 when full-page is true.'
     required: false
@@ -50,6 +53,9 @@ inputs:
     required: false
   format:
     description: 'Output format, png or pdf. Defaults to the API default of png. The API does not produce JPEG.'
+    required: false
+  scale-to-fit:
+    description: 'For PDF only: scale a layout wider than the A4 page down to fit, rather than cropping it, and trim a trailing blank page. Only scales down. Ignored for PNG.'
     required: false
   output-path:
     description: 'Path in the workspace to download the render to. Parent directories are created. Leave unset to use the url output only.'
