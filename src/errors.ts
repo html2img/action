@@ -67,7 +67,7 @@ export function apiError(status: number, payload: ErrorPayload): ActionError {
 
     case 504:
       return new ActionError(
-        `The render did not finish inside the html2img synchronous budget (HTTP 504)${suffix(reference)}. Simplify the document or reduce the dimensions: remote fonts, large images and web requests made by the page all count towards that budget.`,
+        `The render did not finish inside the html2img synchronous budget (HTTP 504)${suffix(reference)}. Remote fonts, large images and requests made by the page all count towards that budget: simplify the document, reduce the dimensions, or set wait-for-selector so the capture waits for the element you need rather than for everything.`,
       );
 
     default:

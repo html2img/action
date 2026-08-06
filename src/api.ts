@@ -12,7 +12,7 @@ import * as path from 'node:path';
 import * as core from '@actions/core';
 
 import { ActionError, apiError, connectionError } from './errors';
-import type { Inputs } from './inputs';
+import type { Inputs, RenderOptions } from './inputs';
 
 const BASE_URL = 'https://app.html2img.com';
 
@@ -53,24 +53,39 @@ export async function render(inputs: Inputs): Promise<Render> {
 
 /** Build the endpoint and JSON body for a render. */
 function requestFor(inputs: Inputs): { endpoint: string; body: Record<string, unknown> } {
-  const { source, width, height, format } = inputs;
+  const { source, options } = inputs;
 
   if (source.kind === 'template') {
     // A template's inputs are top-level keys of the body. `format` is the one
     // documented override, so it is applied last and wins.
     return {
       endpoint: `/api/v1/templates/${encodeURIComponent(source.slug)}`,
-      body: compact({ ...source.variables, format }),
+      body: compact({ ...source.variables, format: options.format }),
     };
   }
 
-  const sizing = { width, height, format };
-
   if (source.kind === 'url') {
-    return { endpoint: '/api/screenshot', body: compact({ url: source.url, ...sizing }) };
+    return {
+      endpoint: '/api/screenshot',
+      body: compact({ url: source.url, ...parameters(options) }),
+    };
   }
 
-  return { endpoint: '/api/html', body: compact({ html: source.html, ...sizing }) };
+  return { endpoint: '/api/html', body: compact({ html: source.html, ...parameters(options) }) };
+}
+
+/** Map the render options onto the API's own parameter names. */
+function parameters(options: RenderOptions): Record<string, unknown> {
+  return {
+    css: options.css,
+    width: options.width,
+    height: options.height,
+    fullpage: options.fullpage,
+    dpi: options.dpi,
+    selector: options.selector,
+    wait_for_selector: options.waitForSelector,
+    format: options.format,
+  };
 }
 
 /** POST a JSON body and decode the response, mapping every failure. */

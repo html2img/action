@@ -29,11 +29,11 @@ const SIDECAR_SUFFIX = '.html2img-hash';
  * a workflow file does not force a re-render.
  */
 export function inputHash(inputs: Inputs): string {
+  // Only the normalised options are hashed, so an option the API ignores for
+  // this render cannot invalidate a file that is already correct.
   const canonical = stringify({
     source: describeSource(inputs.source),
-    width: inputs.width ?? null,
-    height: inputs.height ?? null,
-    format: inputs.format ?? null,
+    options: inputs.options,
   });
 
   return createHash('sha256').update(canonical).digest('hex');

@@ -77,6 +77,7 @@ jobs:
           test "${{ steps.cached.outputs.skipped }}" = "true"
           test "${{ steps.cached.outputs.url }}" = "${{ steps.render.outputs.url }}"
 
+      # Also covers the render options that only apply to a screenshot.
       - name: Screenshot a URL
         id: screenshot
         uses: ./
@@ -85,6 +86,9 @@ jobs:
           url: https://html2img.com
           width: 1280
           height: 720
+          dpi: 2
+          wait-for-selector: 'body'
+          css: '.cookie-banner { display: none !important }'
 
       - name: Check the screenshot returned a URL and no file
         run: |

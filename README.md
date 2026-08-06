@@ -166,6 +166,10 @@ jobs:
           url: ${{ steps.preview.outputs.url }}
           width: 1280
           height: 800
+          # Answering is not the same as being ready to photograph, so wait for
+          # the content, and hide anything that would sit over it.
+          wait-for-selector: 'main'
+          css: '.cookie-banner, .chat-widget { display: none !important }'
 
       - uses: peter-evans/create-or-update-comment@v4
         with:
@@ -177,6 +181,8 @@ jobs:
 ```
 
 No `output-path` is set here, so nothing is written to the workspace and the comment points at the hosted render. On the free plan that image disappears after 7 days, which is usually longer than the pull request stays open.
+
+To photograph one component rather than the viewport, set `selector` to a CSS selector matching exactly one element. For the whole scrolling page, set `full-page: true`.
 
 ### Social card on release
 
@@ -238,13 +244,28 @@ A template renders at its own size, so `width` and `height` are not set here.
 | `variables` | no | | JSON object of the template inputs. Only valid alongside `template`. |
 | `width` | no | `1440` | Viewport width in pixels, 1 to 5000. |
 | `height` | no | `900` | Viewport height in pixels, 1 to 5000. |
+| `full-page` | no | `false` | Capture the whole height of the content instead of the viewport. |
+| `selector` | no | | CSS selector to crop the capture to. Only valid with `url`, and must match exactly one element. |
+| `wait-for-selector` | no | | Wait until this CSS selector appears in the DOM before capturing. |
+| `dpi` | no | `1` or `2` | Device pixel ratio, 1 to 4. Multiplies the rendered dimensions. |
+| `css` | no | | Extra CSS injected into the page. |
 | `format` | no | `png` | Either `png` or `pdf`. |
 | `output-path` | no | | Path to download the render to. Parent directories are created. |
 | `skip-unchanged` | no | `true` | Skip the API call when the output and its hash sidecar are already current. |
 
-Set exactly one of `html`, `html-file`, `url` or `template`. The defaults for `width`, `height` and `format` are the API's own: leave them out and the API applies them.
+Set exactly one of `html`, `html-file`, `url` or `template`. Every default above is the API's own: leave an input out and the API applies it. The `dpi` default depends on the endpoint — 1 for a `url` screenshot, 2 for HTML.
 
-`width` and `height` are ignored for a template, which renders at its own size, and for `format: pdf`, which is A4 portrait. The action warns rather than failing if you set them anyway.
+`css` is injected on top of the page's existing styles, which usually win on specificity, so `!important` is generally needed. It is the tidiest way to hide a cookie banner or a chat widget before a screenshot.
+
+Some combinations cannot do anything, and the API documents them as ignored. Rather than send them, the action drops them and says so in a warning, which also keeps the cache from re-rendering over an input that could not have changed the output:
+
+| Combination | Ignored |
+| --- | --- |
+| a template render | everything except `format`, since a template renders at its own size from its own inputs |
+| `format: pdf` | `width`, `height`, `full-page`, `dpi` and `selector`, since PDF output is A4 portrait and paginates long content |
+| `full-page: true` | `height`, because the image takes the height of the content, and `dpi`, which the API forces to 1 |
+
+Using `selector` without `url` is an error rather than a warning, because it would otherwise return a full-page capture where you asked for one element.
 
 ## Outputs
 
@@ -258,7 +279,7 @@ Set exactly one of `html`, `html-file`, `url` or `template`. The defaults for `w
 
 One credit is one render, whether the output is a PNG or a PDF. Nothing in this action retries, so a failed render does not spend a credit twice.
 
-With `output-path` set and `skip-unchanged` left on, the action hashes the resolved inputs — the markup or URL, the template and its variables, and the dimensions and format — and writes the digest next to the file as `<output-path>.html2img-hash`. When the file and a matching digest are both present, the API is never called and `skipped` is `true`. Commit both files to keep that cache across runs. The API key is not part of the digest, so rotating a key does not invalidate anything.
+With `output-path` set and `skip-unchanged` left on, the action hashes the resolved inputs — the markup or URL, the template and its variables, and every render option that will actually be sent — and writes the digest next to the file as `<output-path>.html2img-hash`. When the file and a matching digest are both present, the API is never called and `skipped` is `true`. Commit both files to keep that cache across runs. The API key is not part of the digest, so rotating a key does not invalidate anything.
 
 Renders on the free plan are kept for 7 days. Paid plans keep them indefinitely; see [pricing](https://html2img.com/pricing).
 

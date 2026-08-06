@@ -28,10 +28,25 @@ inputs:
     description: 'JSON object of the template inputs. Only valid alongside template.'
     required: false
   width:
-    description: 'Viewport width in pixels, 1 to 5000. Defaults to the API default of 1440. No effect on PDF or template renders.'
+    description: 'Viewport width in pixels, 1 to 5000. Defaults to the API default of 1440. Ignored for PDF and template renders.'
     required: false
   height:
-    description: 'Viewport height in pixels, 1 to 5000. Defaults to the API default of 900. No effect on PDF or template renders.'
+    description: 'Viewport height in pixels, 1 to 5000. Defaults to the API default of 900. Ignored for PDF and template renders, and when full-page is true.'
+    required: false
+  full-page:
+    description: 'Capture the whole height of the content instead of the viewport. Ignored for PDF and template renders. Forces dpi to 1.'
+    required: false
+  selector:
+    description: 'CSS selector to crop the capture to. Only valid with url, and must match exactly one element. Ignored for PDF.'
+    required: false
+  wait-for-selector:
+    description: 'Wait until this CSS selector appears in the DOM before capturing. Not detected inside iframes.'
+    required: false
+  dpi:
+    description: 'Device pixel ratio, 1 to 4. Defaults to the API default, which is 1 for a url screenshot and 2 for HTML. Ignored for PDF and template renders, and forced to 1 when full-page is true.'
+    required: false
+  css:
+    description: 'Extra CSS injected into the page, for hiding cookie banners or forcing a colour scheme. Page styles often win on specificity, so !important is usually needed.'
     required: false
   format:
     description: 'Output format, png or pdf. Defaults to the API default of png. The API does not produce JPEG.'

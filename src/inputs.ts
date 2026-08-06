@@ -2,7 +2,10 @@
  * Reading and validating the action inputs.
  *
  * Anything invalid is caught here, before a request is sent, so a mistake in
- * a workflow file never costs a credit.
+ * a workflow file never costs a credit. Options the API would ignore are
+ * dropped rather than merely warned about, which keeps the request body and
+ * the cache digest in step: an option that cannot change the output cannot
+ * force a re-render either.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -21,16 +24,28 @@ export type Source =
   | { kind: 'url'; url: string }
   | { kind: 'template'; slug: string; variables: Record<string, unknown> };
 
+/**
+ * Render options, in the action's own naming.
+ *
+ * Every key is optional: an option that is left out is omitted from the
+ * request so the API applies its own default.
+ */
+export interface RenderOptions {
+  css?: string;
+  width?: number;
+  height?: number;
+  fullpage?: boolean;
+  dpi?: number;
+  selector?: string;
+  waitForSelector?: string;
+  format?: Format;
+}
+
 /** The fully resolved inputs for one render. */
 export interface Inputs {
   apiKey: string;
   source: Source;
-  /** Omitted when unset, so the API applies its own default of 1440. */
-  width: number | undefined;
-  /** Omitted when unset, so the API applies its own default of 900. */
-  height: number | undefined;
-  /** Omitted when unset, so the API applies its own default of png. */
-  format: Format | undefined;
+  options: RenderOptions;
   outputPath: string | undefined;
   skipUnchanged: boolean;
 }
@@ -38,9 +53,21 @@ export interface Inputs {
 const SOURCE_INPUTS = ['html', 'html-file', 'url', 'template'] as const;
 const FORMATS: readonly string[] = ['png', 'pdf'];
 
-/** The API's documented limits, checked here to fail fast and free. */
-const MIN_DIMENSION = 1;
-const MAX_DIMENSION = 5000;
+/** The API's documented ranges, checked here to fail fast and free. */
+const DIMENSION_RANGE = { min: 1, max: 5000 } as const;
+const DPI_RANGE = { min: 1, max: 4 } as const;
+
+/** The input name behind each option, for messages. */
+const INPUT_NAMES: Record<keyof RenderOptions, string> = {
+  css: 'css',
+  width: 'width',
+  height: 'height',
+  fullpage: 'full-page',
+  dpi: 'dpi',
+  selector: 'selector',
+  waitForSelector: 'wait-for-selector',
+  format: 'format',
+};
 
 /** Read every input, mask the key, and validate the combination. */
 export async function resolveInputs(): Promise<Inputs> {
@@ -58,64 +85,120 @@ export async function resolveInputs(): Promise<Inputs> {
   // if the key reaches an error message by accident.
   core.setSecret(apiKey);
 
-  const format = readFormat();
   const outputPath = optional('output-path');
   const source = await readSource();
-  const dimensions = readDimensions(source, format);
+  const options = normalise(source, readOptions());
 
-  warnAboutExtension(outputPath, format);
+  warnAboutExtension(outputPath, options.format);
 
   return {
     apiKey,
     source,
-    width: dimensions.width,
-    height: dimensions.height,
-    format,
+    options,
     outputPath,
     skipUnchanged: readSkipUnchanged(),
   };
 }
 
-/** Read skip-unchanged, treating an absent value as the documented default. */
-function readSkipUnchanged(): boolean {
-  return optional('skip-unchanged') === undefined ? true : core.getBooleanInput('skip-unchanged');
+/** Read the render options as written, before any normalisation. */
+function readOptions(): RenderOptions {
+  return {
+    css: optional('css'),
+    width: readInteger('width', DIMENSION_RANGE),
+    height: readInteger('height', DIMENSION_RANGE),
+    fullpage: readBoolean('full-page'),
+    dpi: readInteger('dpi', DPI_RANGE),
+    selector: optional('selector')?.trim(),
+    waitForSelector: optional('wait-for-selector')?.trim(),
+    format: readFormat(),
+  };
 }
 
 /**
- * Read width and height, discarding them where the API ignores them.
+ * Discard options the API documents as having no effect for this render.
  *
- * Discarding rather than merely warning keeps the request body and the cache
- * key in step, so a dimension that cannot change the output cannot force a
- * re-render either.
+ * The rules come from the parameter reference at https://html2img.com/docs.
  */
-function readDimensions(
-  source: Source,
-  format: Format | undefined,
-): { width: number | undefined; height: number | undefined } {
-  const width = readDimension('width');
-  const height = readDimension('height');
-
-  if (width === undefined && height === undefined) {
-    return { width, height };
-  }
-
-  if (format === 'pdf') {
-    core.warning(
-      'PDF output is A4 portrait, so width and height are ignored. Drop them, or use format: png.',
+function normalise(source: Source, options: RenderOptions): RenderOptions {
+  if (options.selector !== undefined && source.kind !== 'url') {
+    throw new ActionError(
+      'The selector input only applies to a url screenshot: it crops the capture to one element of a page being visited. Remove it, or render with url instead.',
     );
-
-    return { width: undefined, height: undefined };
   }
 
   if (source.kind === 'template') {
-    core.warning(
-      'A template renders at its own size, so width and height are ignored. Each template documents the dimensions it produces.',
+    // A template's own inputs travel as top-level keys of the request body, so
+    // sending render options alongside them risks colliding with an input of
+    // the same name. Only format is a documented override.
+    return drop(
+      options,
+      ['css', 'width', 'height', 'fullpage', 'dpi', 'waitForSelector'],
+      'for a template render',
+      'A template renders at its own size from its own inputs.',
     );
-
-    return { width: undefined, height: undefined };
   }
 
-  return { width, height };
+  let result = options;
+
+  if (result.format === 'pdf') {
+    // PDF output is A4 portrait and vector, so sizing and cropping do not
+    // apply. css and wait-for-selector still affect what gets rendered.
+    result = drop(
+      result,
+      ['width', 'height', 'fullpage', 'dpi', 'selector'],
+      'when format is pdf',
+      'PDF output is A4 portrait and paginates long content automatically.',
+    );
+  }
+
+  if (result.fullpage === true) {
+    result = drop(
+      result,
+      ['height'],
+      'when full-page is true',
+      'The image takes the height of the content.',
+    );
+
+    if (result.dpi !== undefined && result.dpi > 1) {
+      result = drop(
+        result,
+        ['dpi'],
+        'when full-page is true',
+        'The API forces dpi to 1 for a full-page capture; raise width instead for a larger image.',
+      );
+    }
+  }
+
+  return result;
+}
+
+/** Drop options that have no effect, naming them once in a single warning. */
+function drop(
+  options: RenderOptions,
+  keys: readonly (keyof RenderOptions)[],
+  reason: string,
+  explanation: string,
+): RenderOptions {
+  const dropped = keys.filter((key) => options[key] !== undefined);
+
+  if (dropped.length === 0) {
+    return options;
+  }
+
+  const names = sentenceList(dropped.map((key) => INPUT_NAMES[key]));
+  const one = dropped.length === 1;
+
+  core.warning(
+    `${names} ${one ? 'has' : 'have'} no effect ${reason}, so ${one ? 'it is' : 'they are'} ignored. ${explanation}`,
+  );
+
+  const result = { ...options };
+
+  for (const key of dropped) {
+    delete result[key];
+  }
+
+  return result;
 }
 
 /** Resolve exactly one of html, html-file, url or template. */
@@ -256,7 +339,10 @@ function readFormat(): Format | undefined {
   return value as Format;
 }
 
-function readDimension(name: 'width' | 'height'): number | undefined {
+function readInteger(
+  name: 'width' | 'height' | 'dpi',
+  range: { min: number; max: number },
+): number | undefined {
   const value = optional(name);
 
   if (value === undefined) {
@@ -265,13 +351,22 @@ function readDimension(name: 'width' | 'height'): number | undefined {
 
   const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed < MIN_DIMENSION || parsed > MAX_DIMENSION) {
+  if (!Number.isInteger(parsed) || parsed < range.min || parsed > range.max) {
     throw new ActionError(
-      `The ${name} input must be a whole number between ${MIN_DIMENSION} and ${MAX_DIMENSION}, but it is ${value}.`,
+      `The ${name} input must be a whole number between ${range.min} and ${range.max}, but it is ${value}.`,
     );
   }
 
   return parsed;
+}
+
+function readBoolean(name: string): boolean | undefined {
+  return optional(name) === undefined ? undefined : core.getBooleanInput(name);
+}
+
+/** Read skip-unchanged, treating an absent value as the documented default. */
+function readSkipUnchanged(): boolean {
+  return optional('skip-unchanged') === undefined ? true : core.getBooleanInput('skip-unchanged');
 }
 
 /** Warn when output-path implies a different file type from the render. */
@@ -303,6 +398,14 @@ function optional(name: string): string | undefined {
   const value = core.getInput(name);
 
   return value === '' ? undefined : value;
+}
+
+function sentenceList(items: readonly string[]): string {
+  if (items.length <= 1) {
+    return items[0] ?? '';
+  }
+
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function describe(value: unknown): string {
