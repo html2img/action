@@ -6,7 +6,7 @@ A free account comes with 50 credits and needs no card. One credit is one render
 
 ## Quick start
 
-Create an API key on your dashboard, add it to the repository as a secret named `HTML2IMG_API_KEY`, then:
+Create a key on your [dashboard](https://app.html2img.com/dashboard), add it to the repository as a secret named `HTML2IMG_API_KEY`, then:
 
 ```yaml
 # HTML to Image API — https://html2img.com
