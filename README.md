@@ -263,7 +263,7 @@ The `dpi` default depends on the endpoint: 1 for a `url` screenshot, but 2 for H
 
 For timing, prefer `wait-for-selector` wherever you control the markup: it returns as soon as the element exists, where `ms-delay` always waits the full duration. `ms-delay` is the fallback for the case `wait-for-selector` cannot cover, since it does not see inside iframes. If you find yourself reaching for several seconds of delay, the render is probably close to the API's timeout and worth simplifying instead.
 
-`scale-to-fit` applies to PDF output only. It scales a layout wider than the A4 page down until it fits, rather than cropping it, and trims a trailing blank page. It only ever scales down, so a 600px-wide card stays 600px wide on the page.
+`scale-to-fit` applies to [HTML to PDF](https://html2img.com/html-to-pdf/) output only. It scales a layout wider than the A4 page down until it fits, rather than cropping it, and trims a trailing blank page. It only ever scales down, so a 600px-wide card stays 600px wide on the page.
 
 Some combinations cannot do anything, and the API documents them as ignored. Rather than send them, the action drops them and says so in a warning, which also keeps the cache from re-rendering over an input that could not have changed the output:
 
@@ -300,7 +300,11 @@ Failures name the cause and the fix. An invalid key says so and points at the da
 
 The action runs on the node20 runner with no container, so it adds no pull to your job. `dist/` is committed because the runner executes it directly.
 
-Full parameter reference and language examples are in [the docs](https://html2img.com/docs).
+Full parameter reference and language examples are in the [HTML to Image API documentation](https://html2img.com/docs), and the [GitHub Actions integration guide](https://html2img.com/integrations/github-actions/) walks through complete workflows.
+
+## Links
+
+[HTML to Image API](https://html2img.com) · [Screenshot API](https://html2img.com/screenshot-api/) · [HTML to PDF API](https://html2img.com/html-to-pdf/) · [Documentation](https://html2img.com/docs) · [GitHub Actions guide](https://html2img.com/integrations/github-actions/) · [Templates](https://html2img.com/templates) · [Pricing](https://html2img.com/pricing)
 
 ## Licence
 
