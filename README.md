@@ -302,6 +302,17 @@ The action runs on the node20 runner with no container, so it adds no pull to yo
 
 Full parameter reference and language examples are in the [HTML to Image API documentation](https://html2img.com/docs), and the [GitHub Actions integration guide](https://html2img.com/integrations/github-actions/) walks through complete workflows.
 
+## Other official packages
+
+The same API has official packages for other languages and platforms, all available now:
+
+- **SDKs:** [PHP](https://github.com/html2img/html2img-php) · [JavaScript and TypeScript](https://github.com/html2img/html2img-js) · [Python](https://github.com/html2img/html2img-python) · [Ruby](https://github.com/html2img/html2img-ruby)
+- **Frameworks:** [Laravel](https://github.com/html2img/html2img-laravel) · [Django](https://github.com/html2img/html2img-django)
+- **CMS plugins:** [WordPress](https://wordpress.org/plugins/html2img/) · [Statamic](https://github.com/html2img/statamic-og-images) · [Craft CMS](https://plugins.craftcms.com/og-images)
+- **Automation and AI:** [MCP server](https://html2img.com/mcp/) (paid plans)
+
+There are also worked guides for [React](https://html2img.com/integrations/javascript/#react-and-nextjs) and [Vue](https://html2img.com/integrations/javascript/#vue-and-nuxt), and anything that can make an HTTP request works with the API. Every integration is listed on the [integrations hub](https://html2img.com/integrations/).
+
 ## Links
 
 [HTML to Image API](https://html2img.com) · [Screenshot API](https://html2img.com/screenshot-api/) · [HTML to PDF API](https://html2img.com/html-to-pdf/) · [Documentation](https://html2img.com/docs) · [GitHub Actions guide](https://html2img.com/integrations/github-actions/) · [Templates](https://html2img.com/templates) · [Pricing](https://html2img.com/pricing)

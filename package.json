@@ -1,6 +1,6 @@
 {
   "name": "html2img-action",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "GitHub Action that renders HTML, live URLs and named templates to images with the HTML to Image API",
   "homepage": "https://html2img.com",

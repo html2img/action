@@ -25987,7 +25987,7 @@ function apiError(status, payload) {
                 ? `The html2img API received no API key (HTTP 401). Pass one as the api-key input, for example api-key: \${{ secrets.HTML2IMG_API_KEY }}. Create a key at ${DASHBOARD_URL} and add it to the repository secrets.`
                 : `The html2img API rejected the API key as invalid (HTTP 401). Check that the secret holds a current key with no leading or trailing whitespace. You can view and create keys at ${DASHBOARD_URL}.`);
         case 402:
-            return new ActionError(`Your html2img account is out of credits (HTTP 402), so this render was not performed. Credits reset at the start of each billing period, or you can raise your limit: ${PRICING_URL}.`);
+            return insufficientCredits(payload);
         case 403:
             return new ActionError(`The html2img API key is valid but the account has no active subscription (HTTP 403). Choose a plan at ${PRICING_URL}, then re-run this job.`);
         case 404:
@@ -26013,6 +26013,30 @@ function connectionError(cause, timeoutMs) {
         return new ActionError(`The request to the html2img API timed out after ${timeoutMs}ms. This is usually a slow render rather than a network fault: simplify the document, or reduce the dimensions.`);
     }
     return new ActionError(`Could not reach the html2img API: ${cause instanceof Error ? cause.message : String(cause)}. Check that the runner has outbound network access to app.html2img.com.`);
+}
+/**
+ * Explain a 402. Free credits are a one-off allowance, so a free account's
+ * payload carries `upgrade_url` and nothing resets. Paid plans renew, so
+ * theirs carries `credits_reset_at` instead.
+ */
+function insufficientCredits(payload) {
+    if (payload['upgrade_url'] !== undefined && payload['upgrade_url'] !== null) {
+        const upgradeUrl = asString(payload['upgrade_url']) ?? PRICING_URL;
+        return new ActionError(`Your html2img account has used its one-off allowance of free credits (HTTP 402), so this render was not performed. Upgrading to a paid plan adds monthly credits: ${upgradeUrl}.`);
+    }
+    const resetDate = datePart(payload['credits_reset_at']);
+    if (resetDate !== null) {
+        return new ActionError(`Your html2img account is out of credits (HTTP 402), so this render was not performed. Your credits reset on ${resetDate}, or you can raise your limit: ${PRICING_URL}.`);
+    }
+    return new ActionError(`Your html2img account is out of credits (HTTP 402), so this render was not performed. See your options at ${PRICING_URL}.`);
+}
+/**
+ * The YYYY-MM-DD part of an ISO 8601 timestamp, taken as written so it
+ * matches the date the API reports in its own message.
+ */
+function datePart(value) {
+    const match = /^\d{4}-\d{2}-\d{2}/.exec(asString(value) ?? '');
+    return match === null ? null : match[0];
 }
 /**
  * Render the per-field validation messages from a 422 body.
