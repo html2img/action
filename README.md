@@ -309,7 +309,7 @@ The same API has official packages for other languages and platforms, all availa
 - **SDKs:** [PHP](https://github.com/html2img/html2img-php) · [JavaScript and TypeScript](https://github.com/html2img/html2img-js) · [Python](https://github.com/html2img/html2img-python) · [Ruby](https://github.com/html2img/html2img-ruby)
 - **Frameworks:** [Laravel](https://github.com/html2img/html2img-laravel) · [Django](https://github.com/html2img/html2img-django)
 - **CMS plugins:** [WordPress](https://wordpress.org/plugins/html2img/) · [Statamic](https://github.com/html2img/statamic-og-images) · [Craft CMS](https://plugins.craftcms.com/og-images)
-- **Automation and AI:** [MCP server](https://html2img.com/mcp/) (paid plans)
+- **Automation and AI:** [MCP server](https://html2img.com/mcp/) (every plan, free included)
 
 There are also worked guides for [React](https://html2img.com/integrations/javascript/#react-and-nextjs) and [Vue](https://html2img.com/integrations/javascript/#vue-and-nuxt), and anything that can make an HTTP request works with the API. Every integration is listed on the [integrations hub](https://html2img.com/integrations/).
 
