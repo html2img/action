@@ -1,4 +1,4 @@
-# HTML to Image
+# HTML to Image (html2img)
 
 Render HTML, a live URL or a named template to an image from a GitHub workflow, using the [HTML to Image API](https://html2img.com). Use it to generate Open Graph images for new posts, screenshot a pull request preview, or produce a social card when you publish a release.
 
